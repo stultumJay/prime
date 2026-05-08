@@ -178,8 +178,24 @@ export default function EditProjectModal({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <TextField label="Expected Start" type="date" value={expectedStart} onChange={setExpectedStart} required={false} />
-            <TextField label="Expected End" type="date" value={expectedEnd} onChange={setExpectedEnd} required={false} />
+            <TextField 
+              label="Expected Start" 
+              type="date" 
+              value={expectedStart} 
+              onChange={setExpectedStart} 
+              required={false} 
+              min="2000-01-01" 
+              max="2100-12-31" 
+            />
+            <TextField 
+              label="Expected End" 
+              type="date" 
+              value={expectedEnd} 
+              onChange={setExpectedEnd} 
+              required={false} 
+              min="2000-01-01" 
+              max="2100-12-31" 
+            />
             <TextField label="Actual Start" type="date" value={computedActualStart} onChange={setActualStart} required={false} disabled />
             <TextField label="Actual End" type="date" value={computedActualEnd} onChange={setActualEnd} required={false} disabled />
           </div>
@@ -226,6 +242,8 @@ function TextField({
   required = true,
   step,
   disabled = false,
+  min,
+  max,
   onChange,
 }: {
   label: string;
@@ -234,6 +252,8 @@ function TextField({
   required?: boolean;
   step?: string;
   disabled?: boolean;
+  min?: string;
+  max?: string;
   onChange: (value: string) => void;
 }) {
   return (
@@ -247,6 +267,8 @@ function TextField({
         required={required}
         step={step}
         disabled={disabled}
+        min={min}
+        max={max}
         onChange={(event) => onChange(event.target.value)}
         className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 disabled:bg-slate-50 disabled:text-slate-500"
       />
