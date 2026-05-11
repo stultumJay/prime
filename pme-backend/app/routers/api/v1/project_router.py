@@ -238,16 +238,16 @@ def project_documents(
     _: UserAccount = Depends(get_current_user),
 ):
     """
-    This route returns the project documents data the caller asked for
+    Return project document files.
     """
     project = project_service.get_project_by_id(db, project_id)
-    documents = get_project_documents(getattr(project, "dtn_no", None))
+    document_id = getattr(project, "dtn_no", None)
+    documents = get_project_documents(document_id)
 
     return {
         "project_id": str(project_id),
-        "dtn_no": getattr(project, "dtn_no", None),
-        "valid": bool(documents),
-        "folder_url": documents[0].get("folder_url") if documents else None,
+        "document_id": document_id,
+        "valid": len(documents) > 0,
         "documents": documents,
     }
 
@@ -262,7 +262,7 @@ def set_project_dtn(
     _: UserAccount = Depends(get_current_user),
 ):
     """
-    This route saves the DTS document tracking number used for Google Drive lookup
+    Save the DTS document tracking number used for document file lookup.
     """
     return project_service.set_project_dtn(db, project_id, payload.dtn_no)
 

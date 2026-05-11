@@ -11,6 +11,7 @@ import {
   inputCls,
   ModalButton,
 } from "./ModalShell";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
   open: boolean;
@@ -97,18 +98,19 @@ export default function AllotmentModal({
   };
 
   return (
-    <ModalShell
-      open={open}
-      onClose={onClose}
-      title="Issue Allotment Release Order (ARO)"
-      subtitle="Authorize the release of funds for obligation based on the approved appropriation"
-      footer={
-        <>
-          <div />
-          <div className="flex gap-3">
-            <ModalButton variant="secondary" onClick={onClose} disabled={busy}>
-              Cancel
-            </ModalButton>
+    <TooltipProvider delayDuration={100}>
+      <ModalShell
+        open={open}
+        onClose={onClose}
+        title="Issue Allotment Release Order (ARO)"
+        subtitle="Authorize the release of funds for obligation based on the approved appropriation"
+        footer={
+          <>
+            <div />
+            <div className="flex gap-3">
+              <ModalButton variant="secondary" onClick={onClose} disabled={busy}>
+                Cancel
+              </ModalButton>
             <ModalButton onClick={handleSave} disabled={busy || !isValid}>
               {busy ? "Submitting..." : "Submit Allotment"}
             </ModalButton>
@@ -145,12 +147,27 @@ export default function AllotmentModal({
         <div className="grid grid-cols-2 gap-x-6 gap-y-5">
           <div>
             <FieldLabel required>ARO Number</FieldLabel>
-            <input
-              className={inputCls}
-              placeholder="e.g., 2025-01-001"
-              value={aroNumber}
-              onChange={(e) => setAroNumber(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                className={`${inputCls} pr-10`}
+                placeholder="e.g., 2025-01-001"
+                value={aroNumber}
+                onChange={(e) => setAroNumber(e.target.value)}
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-100"
+                  >
+                    i
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[220px]">
+                  An official authorization document for departments to spend their released budget allotments.
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
           <div>
             <FieldLabel required>Release Date</FieldLabel>
@@ -270,5 +287,6 @@ export default function AllotmentModal({
         </div>
       </div>
     </ModalShell>
+    </TooltipProvider>
   );
 }

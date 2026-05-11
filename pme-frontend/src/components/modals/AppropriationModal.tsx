@@ -17,6 +17,7 @@ import {
   readonlyInputCls,
   ModalButton,
 } from "./ModalShell";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const EXPENSE_CLASS_LABELS: Record<string, string> = {
   PS: "Personal Services",
@@ -225,13 +226,14 @@ export default function AppropriationModal({
   const canSave = !busy && !validationError;
 
   return (
-    <ModalShell
-      open={open}
-      onClose={onClose}
-      title={isUpdate ? "Update Project Appropriation" : "Add Project Appropriation"}
-      subtitle={isUpdate ? "Adjust existing appropriation records without reducing stored amounts." : "Create the appropriation and assign budget lines by fund source and expense class."}
-      size="max-w-4xl"
-      footer={
+    <TooltipProvider delayDuration={100}>
+      <ModalShell
+        open={open}
+        onClose={onClose}
+        title={isUpdate ? "Update Project Appropriation" : "Add Project Appropriation"}
+        subtitle={isUpdate ? "Adjust existing appropriation records without reducing stored amounts." : "Create the appropriation and assign budget lines by fund source and expense class."}
+        size="max-w-4xl"
+        footer={
         <>
           <div className="flex flex-col">
             <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -268,12 +270,27 @@ export default function AppropriationModal({
         </div>
         <div>
           <FieldLabel required>AO Number</FieldLabel>
-          <input
-            className={inputCls}
-            placeholder="e.g., AO-2025-01"
-            value={aoNumber}
-            onChange={(event) => setAoNumber(event.target.value)}
-          />
+          <div className="relative">
+            <input
+              className={`${inputCls} pr-10`}
+              placeholder="e.g., AO-2025-01"
+              value={aoNumber}
+              onChange={(event) => setAoNumber(event.target.value)}
+            />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-100"
+                >
+                  i
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[220px]">
+                The local law directing government fund payments.
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
         <div>
           <FieldLabel>Project Title</FieldLabel>
@@ -406,5 +423,6 @@ export default function AppropriationModal({
         </table>
       </div>
     </ModalShell>
+    </TooltipProvider>
   );
 }

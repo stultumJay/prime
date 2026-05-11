@@ -306,8 +306,7 @@ export interface ProjectDetailPayload {
     document_id?: string;
     name: string;
     uploaded_at: string;
-    view_url?: string | null;
-    download_url?: string | null;
+    document_url?: string | null;
   }[];
   document_tracking: ProjectDocumentResponse;
 }
@@ -318,8 +317,7 @@ type BackendIssueRecord = Record<string, any>;
 export interface ProjectDocumentItem {
   id: string;
   name: string;
-  view_url?: string | null;
-  download_url?: string | null;
+  document_url?: string | null;
   created_at?: string | null;
 }
 
@@ -327,7 +325,6 @@ export interface ProjectDocumentResponse {
   project_id: string;
   dtn_no?: string | null;
   valid: boolean;
-  folder_url?: string | null;
   documents: ProjectDocumentItem[];
 }
 
@@ -430,7 +427,7 @@ function buildProjectActivity(
   issues: ProjectDetailPayload["issues"],
   timelineRows: BackendProjectRecord[],
   progressRows: BackendProjectRecord[],
-  documentRows: BackendProjectRecord[],
+  documentRows: ProjectDocumentItem[],
   financeLedger?: BackendProjectRecord,
 ): ProjectDetailPayload["activity"] {
   const fundSourceRows = Array.isArray(financeLedger?.fund_sources) ? financeLedger.fund_sources : [];
@@ -505,12 +502,12 @@ function buildProjectActivity(
   }));
 
   const documentEntries: ProjectDetailPayload["activity"] = documentRows.map((row: any, index: number) => ({
-    id: `document-${asString(row.document_id, String(index))}`,
+    id: `document-${asString(row.id, String(index))}`,
     kind: "document" as const,
-    title: `${asString(row.document_name ?? row.name, "Project document")} added`,
+    title: `${asString(row.name, "Project document")} added`,
     detail: "A new project document was attached to this record.",
     actor: activityActor(row),
-    occurred_at: asString(row.uploaded_at ?? row.created_at, new Date().toISOString()),
+    occurred_at: asString(row.created_at, new Date().toISOString()),
   }));
 
   return [...financeEntries, ...issueEntries, ...timelineEntries, ...progressEntries, ...documentEntries].sort(
@@ -621,25 +618,24 @@ function normalizeDetail(
   const allotted = toNumber(financeSummary?.total_allotted, toNumber(financials.allotted));
   const obligated = toNumber(financeSummary?.total_obligated, toNumber(financials.obligated));
   const disbursement = toNumber(financeSummary?.total_disbursed, toNumber(financials.disbursement));
-  const rawDocuments = documentResponse ?? raw.documents;
-  const documentRows = Array.isArray(rawDocuments)
-    ? rawDocuments
-    : Array.isArray(rawDocuments?.documents)
-      ? rawDocuments.documents
-      : [];
   const documentTracking: ProjectDocumentResponse = {
-    project_id: asString(rawDocuments?.project_id ?? projectRaw.project_id),
-    dtn_no: rawDocuments?.dtn_no ? asString(rawDocuments.dtn_no) : projectRaw.dtn_no ? asString(projectRaw.dtn_no) : null,
-    valid: Boolean(rawDocuments?.valid),
-    folder_url: rawDocuments?.folder_url ? asString(rawDocuments.folder_url) : null,
-    documents: documentRows.map((doc: any) => ({
-      id: asString(doc.id ?? doc.document_id ?? doc.name),
-      name: asString(doc.name ?? doc.document_name, "Project document"),
-      view_url: doc.view_url ? asString(doc.view_url) : null,
-      download_url: doc.download_url ? asString(doc.download_url) : null,
-      created_at: doc.created_at ?? doc.uploaded_at ? asString(doc.created_at ?? doc.uploaded_at) : null,
-    })),
+    project_id: asString(
+      documentResponse?.project_id ?? projectRaw.project_id,
+    ),
+    dtn_no: documentResponse?.document_id
+      ? asString(documentResponse.document_id)
+      : null,
+    valid: Boolean(documentResponse?.valid),
+    documents: Array.isArray(documentResponse?.documents)
+      ? documentResponse.documents.map((doc: any) => ({
+          id: asString(doc.id),
+          name: asString(doc.name, "Project document"),
+          document_url: doc.document_url ? asString(doc.document_url) : null,
+          created_at: doc.uploaded_at ? asString(doc.uploaded_at) : null,
+        }))
+      : [],
   };
+  const documentRows = documentTracking.documents;
   const issues = normalizeProjectIssues(issueRows);
   const ledgerFundSources = Array.isArray(financeLedger?.fund_sources)
     ? financeLedger.fund_sources
@@ -827,11 +823,10 @@ function normalizeDetail(
     issues,
     activity: buildProjectActivity(issues, timelineRows, physicalProgressRows, documentRows, financeLedger),
     documents: documentRows.map((doc: any) => ({
-      document_id: doc.document_id ?? doc.id ? asString(doc.document_id ?? doc.id) : undefined,
-      name: asString(doc.document_name ?? doc.name, "Project document"),
-      uploaded_at: asString(doc.uploaded_at ?? doc.created_at, new Date().toISOString()),
-      view_url: doc.view_url ? asString(doc.view_url) : null,
-      download_url: doc.download_url ? asString(doc.download_url) : null,
+      document_id: doc.id ? asString(doc.id) : undefined,
+      name: asString(doc.name, "Project document"),
+      uploaded_at: asString(doc.created_at, new Date().toISOString()),
+      document_url: doc.document_url ? asString(doc.document_url) : null,
     })),
     document_tracking: documentTracking,
   };
@@ -897,19 +892,16 @@ export async function updateProjectDtn(projectId: string, dtnNo: string) {
 
 export async function getProjectDocuments(projectId: string): Promise<ProjectDocumentResponse> {
   const raw = await requestJson<BackendProjectRecord>(`/projects/${projectId}/documents`);
-  const documents = Array.isArray(raw.documents) ? raw.documents : [];
 
   return {
     project_id: asString(raw.project_id, projectId),
-    dtn_no: raw.dtn_no ? asString(raw.dtn_no) : null,
+    dtn_no: raw.document_id ? asString(raw.document_id) : null,
     valid: Boolean(raw.valid),
-    folder_url: raw.folder_url ? asString(raw.folder_url) : null,
-    documents: documents.map((doc: any) => ({
-      id: asString(doc.id ?? doc.document_id ?? doc.name),
-      name: asString(doc.name ?? doc.document_name, "Project document"),
-      view_url: doc.view_url ? asString(doc.view_url) : null,
-      download_url: doc.download_url ? asString(doc.download_url) : null,
-      created_at: doc.created_at ?? doc.uploaded_at ? asString(doc.created_at ?? doc.uploaded_at) : null,
+    documents: raw.documents.map((doc: any) => ({
+      id: asString(doc.id),
+      name: asString(doc.name, "Project document"),
+      document_url: doc.document_url ? asString(doc.document_url) : null,
+      created_at: doc.uploaded_at ? asString(doc.uploaded_at) : null,
     })),
   };
 }

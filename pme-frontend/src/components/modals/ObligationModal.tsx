@@ -11,6 +11,7 @@ import {
   inputCls,
   ModalButton,
 } from "./ModalShell";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
   open: boolean;
@@ -91,32 +92,33 @@ export default function ObligationModal({ open, onClose, onSaved, year, allotmen
   };
 
   return (
-    <ModalShell
-      open={open}
-      onClose={onClose}
-      title="Record Obligation Request (ObR)"
-      subtitle="Commit funds for signed contracts or purchase orders"
-      footer={
-        <>
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Unobligated Balance
-            </span>
-            <span className="text-xl font-black text-foreground">
-              {formatPHPFull(selected?.free_balance ?? 0)}
-            </span>
-          </div>
-          <div className="flex gap-3">
-            <ModalButton variant="secondary" onClick={onClose} disabled={busy}>
-              Cancel
-            </ModalButton>
-            <ModalButton onClick={handleSave} disabled={busy || !isValid}>
-              {busy ? "Recording..." : "Record Obligation"}
-            </ModalButton>
-          </div>
-        </>
-      }
-    >
+    <TooltipProvider delayDuration={100}>
+      <ModalShell
+        open={open}
+        onClose={onClose}
+        title="Record Obligation Request (ObR)"
+        subtitle="Commit funds for signed contracts or purchase orders"
+        footer={
+          <>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Unobligated Balance
+              </span>
+              <span className="text-xl font-black text-foreground">
+                {formatPHPFull(selected?.free_balance ?? 0)}
+              </span>
+            </div>
+            <div className="flex gap-3">
+              <ModalButton variant="secondary" onClick={onClose} disabled={busy}>
+                Cancel
+              </ModalButton>
+              <ModalButton onClick={handleSave} disabled={busy || !isValid}>
+                {busy ? "Recording..." : "Record Obligation"}
+              </ModalButton>
+            </div>
+          </>
+        }
+      >
       {error && (
         <div className="mb-4 px-4 py-3 rounded-lg bg-destructive/10 text-destructive text-xs font-medium">
           {error}
@@ -139,24 +141,39 @@ export default function ObligationModal({ open, onClose, onSaved, year, allotmen
         {/* Allotment selector */}
         <div>
           <FieldLabel required>Link to Allotment (ARO)</FieldLabel>
-          <select
-            className={`${inputCls} border-primary/60`}
-            value={allotmentId}
-            onChange={(e) => {
-              setAllotmentId(e.target.value);
-              setObligationAmount(""); // reset amount when allotment changes
-            }}
-            disabled={availableAllotments.length === 0}
-          >
-            {availableAllotments.map((a) => (
-              <option key={a.allotment_id} value={a.allotment_id}>
-                {a.label} — Free: {formatPHPFull(a.free_balance)}
-              </option>
-            ))}
-            {availableAllotments.length === 0 && (
-              <option>No allotments available</option>
-            )}
-          </select>
+          <div className="relative">
+            <select
+              className={`${inputCls} border-primary/60 pr-10`}
+              value={allotmentId}
+              onChange={(e) => {
+                setAllotmentId(e.target.value);
+                setObligationAmount(""); // reset amount when allotment changes
+              }}
+              disabled={availableAllotments.length === 0}
+            >
+              {availableAllotments.map((a) => (
+                <option key={a.allotment_id} value={a.allotment_id}>
+                  {a.label} — Free: {formatPHPFull(a.free_balance)}
+                </option>
+              ))}
+              {availableAllotments.length === 0 && (
+                <option>No allotments available</option>
+              )}
+            </select>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-100"
+                >
+                  i
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[220px]">
+                The allotment release order that authorizes this obligation.
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Payee */}
@@ -195,12 +212,27 @@ export default function ObligationModal({ open, onClose, onSaved, year, allotmen
           </div>
           <div>
             <FieldLabel required>Reference Document</FieldLabel>
-            <input
-              className={inputCls}
-              placeholder="PO No. or Contract No."
-              value={refDoc}
-              onChange={(e) => setRefDoc(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                className={`${inputCls} pr-10`}
+                placeholder="PO No. or Contract No."
+                value={refDoc}
+                onChange={(e) => setRefDoc(e.target.value)}
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-100"
+                  >
+                    i
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[220px]">
+                  The document reference for this obligation, such as a purchase order or contract number.
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
         </div>
 
@@ -241,5 +273,6 @@ export default function ObligationModal({ open, onClose, onSaved, year, allotmen
         </div>
       </div>
     </ModalShell>
+    </TooltipProvider>
   );
 }

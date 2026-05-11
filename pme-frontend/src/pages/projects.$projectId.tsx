@@ -178,9 +178,20 @@ export default function ProjectDetailPage() {
   }
 
   function handleOpenDocument(document: ProjectDetailPayload["documents"][number], action: "view" | "download" = "view") {
-    const url = action === "download" ? document.download_url : document.view_url;
-    if (!url) {
-      setNotice("This document does not have an available Google Drive link for that action yet.");
+    const url = document.document_url;
+    if (!url) return;
+
+    if (action === "view") {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    const match = url.match(/\/d\/([^/]+)/);
+
+    if (match?.[1]) {
+      const fileId = match[1];
+      const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+      window.open(downloadUrl, "_blank", "noopener,noreferrer");
       return;
     }
 
@@ -492,7 +503,7 @@ export default function ProjectDetailPage() {
                 await mutations.updateDtn.mutateAsync(dtnNo);
                 await detailQuery.refetch();
                 setModal(null);
-                setNotice("DTN saved. Project documents were refreshed from Google Drive.");
+                setNotice("DTN saved. Project documents were refreshed.");
               } catch (error) {
                 setDocumentError(error instanceof Error ? error.message : "Failed to save DTN.");
               }
@@ -1191,10 +1202,10 @@ function DocumentsCard({
   const hasDtn = Boolean(tracking.dtn_no);
   const needsScroll = documents.length > 5;
   const emptyMessage = !hasDtn
-    ? "No DTN is linked yet. Add a DTN to load DTS-uploaded files from Google Drive."
+    ? "No DTN is linked yet. Add a DTN to load uploaded files."
     : tracking.valid
-      ? "No files were found in the linked Google Drive folder."
-      : "The linked DTN is invalid or the Google Drive folder could not be found.";
+      ? "No files were found for this document."
+      : "The linked DTN is invalid or no files exist.";
 
   return (
     <section className="rounded-lg border border-border/60 bg-card p-6 shadow-sm">
@@ -1235,11 +1246,11 @@ function DocumentsCard({
                 type="button"
                 onClick={() => onOpenDocument(doc, "view")}
                 className="text-[10px] font-black uppercase text-primary hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground"
-                disabled={!doc.view_url}
+                disabled={!doc.document_url}
               >
                 View
               </button>
-              {doc.download_url ? (
+              {doc.document_url ? (
                 <button
                   type="button"
                   onClick={() => onOpenDocument(doc, "download")}

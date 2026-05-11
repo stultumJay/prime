@@ -11,6 +11,7 @@ import {
   inputCls,
   ModalButton,
 } from "./ModalShell";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const PAYMENT_METHODS = ["Check", "Cash", "ADA"] as const;
 
@@ -95,32 +96,33 @@ export default function DisbursementModal({
   };
 
   return (
-    <ModalShell
-      open={open}
-      onClose={onClose}
-      title="Record Disbursement (Disbursement Voucher)"
-      subtitle="Process actual payment and settlement of a legal obligation"
-      footer={
-        <>
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Unliquidated Obligation
-            </span>
-            <span className="text-lg font-black text-rose-600">
-              {formatPHPFull(selected?.unpaid ?? 0)}
-            </span>
-          </div>
-          <div className="flex gap-3">
-            <ModalButton variant="secondary" onClick={onClose} disabled={busy}>
-              Cancel
-            </ModalButton>
-            <ModalButton onClick={handleSave} disabled={busy || !isValid}>
-              {busy ? "Processing..." : "Finalize Payment"}
-            </ModalButton>
-          </div>
-        </>
-      }
-    >
+    <TooltipProvider delayDuration={100}>
+      <ModalShell
+        open={open}
+        onClose={onClose}
+        title="Record Disbursement (Disbursement Voucher)"
+        subtitle="Process actual payment and settlement of a legal obligation"
+        footer={
+          <>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Unliquidated Obligation
+              </span>
+              <span className="text-lg font-black text-rose-600">
+                {formatPHPFull(selected?.unpaid ?? 0)}
+              </span>
+            </div>
+            <div className="flex gap-3">
+              <ModalButton variant="secondary" onClick={onClose} disabled={busy}>
+                Cancel
+              </ModalButton>
+              <ModalButton onClick={handleSave} disabled={busy || !isValid}>
+                {busy ? "Processing..." : "Finalize Payment"}
+              </ModalButton>
+            </div>
+          </>
+        }
+      >
       {error && (
         <div className="mb-4 px-4 py-3 rounded-lg bg-destructive/10 text-destructive text-xs font-medium">
           {error}
@@ -181,12 +183,27 @@ export default function DisbursementModal({
           </div>
           <div>
             <FieldLabel>Check / Reference Number</FieldLabel>
-            <input
-              className={inputCls}
-              placeholder="e.g. 000045612"
-              value={refNumber}
-              onChange={(e) => setRefNumber(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                className={`${inputCls} pr-10`}
+                placeholder="e.g. 000045612"
+                value={refNumber}
+                onChange={(e) => setRefNumber(e.target.value)}
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-100"
+                  >
+                    i
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[220px]">
+                  The check number or reference for this disbursement.
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
         </div>
 
@@ -259,5 +276,6 @@ export default function DisbursementModal({
         </div>
       </div>
     </ModalShell>
+    </TooltipProvider>
   );
 }

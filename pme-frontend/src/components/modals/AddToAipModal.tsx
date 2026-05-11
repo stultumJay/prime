@@ -3,6 +3,7 @@ import type { AddToAipPayload } from "@/services/projectActions.service";
 import type { ProjectDetailPayload } from "@/services/project.service";
 import { formatPHPFull } from "@/lib/format";
 import { FieldLabel, ModalButton, ModalShell, inputCls, readonlyInputCls } from "./ModalShell";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, } from "@/components/ui/tooltip";
 
 interface AddToAipModalProps {
   open: boolean;
@@ -109,7 +110,8 @@ export default function AddToAipModal({
         </>
       }
     >
-      <div className="space-y-4">
+      <TooltipProvider delayDuration={100}>
+        <div className="space-y-4">
         {error ? (
           <div className="rounded-lg bg-destructive/10 px-4 py-3 text-xs font-medium text-destructive">
             {error}
@@ -145,15 +147,76 @@ export default function AddToAipModal({
         <section className="grid gap-3 md:grid-cols-3">
           <div>
             <FieldLabel required>Major Final Output</FieldLabel>
-            <textarea className={`${inputCls} h-20 resize-none`} value={majorFinalOutput} onChange={(event) => setMajorFinalOutput(event.target.value)} />
+            <div className="relative w-full">
+              <textarea
+                className={`${inputCls} h-20 w-full resize-none pr-10`}
+                value={majorFinalOutput}
+                onChange={(event) => setMajorFinalOutput(event.target.value)}
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="absolute right-2 top-2 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-100"
+                  >
+                    i
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[220px]">
+                  Indicate the good or service that a department/agency is mandated to deliver.
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
           <div>
             <FieldLabel required>Performance Indicator</FieldLabel>
-            <textarea className={`${inputCls} h-20 resize-none`} value={indicator} onChange={(event) => setIndicator(event.target.value)} />
+            <div className="relative w-full">
+              <textarea
+                className={`${inputCls} h-20 w-full resize-none pr-10`}
+                value={indicator}
+                onChange={(event) => setIndicator(event.target.value)}
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="absolute right-2 top-2 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-100"
+                  >
+                    i
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[220px]">
+                  Indicate the means for measuring the quantity, quality and timeliness of service delivery to the clients.
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
           <div>
             <FieldLabel required>Target Total</FieldLabel>
-            <input className={inputCls} type="number" min={1} step={1} value={targetTotal} onChange={(event) => setTargetTotal(event.target.value)} />
+            <div className="relative">
+              <input
+                className={`${inputCls} pr-10`}
+                type="number"
+                min={1}
+                step={1}
+                value={targetTotal}
+                onChange={(event) => setTargetTotal(event.target.value)}
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-100"
+                  >
+                    i
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[220px]">
+                  Indicate the target for the budget year in terms of the performance indicator expressed in quantity, quality, and timeliness.
+
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <p className="mt-1 text-[10px] font-semibold text-muted-foreground">
               Integer output target, not a percentage.
             </p>
@@ -174,19 +237,35 @@ export default function AddToAipModal({
               {formatPHPFull(totalBudget)}
             </span>
           </div>
-          <div className="grid gap-3 lg:grid-cols-4">
-            <BudgetInput label="Personal Services" value={ps} onChange={setPs} />
-            <BudgetInput label="Maintenance and Other Operating Expenses (MOOE)" value={mooe} onChange={setMooe} />
-            <BudgetInput label="Financial Expenses" value={fe} onChange={setFe} />
-            <BudgetInput label="Capital Outlay" value={co} onChange={setCo} />
+          <div className="grid gap-3 lg:grid-cols-4 items-stretch">
+            <BudgetInput label="Personal Services" value={ps} onChange={setPs} tooltip="Includes payment of salaries, wages, and other compensation of permanent, temporary, contractual, and casual employees of the LGU." />
+            <BudgetInput label="Maintenance and Other Operating Expenses (MOOE)" value={mooe} onChange={setMooe} tooltip="Include maintenance requirements of existing as well as newly-completed facilities and newly-acquired assets e.g., vehicles." />
+            <BudgetInput label="Financial Expenses" value={fe} onChange={setFe} tooltip="Include Management Supervisions/Trusteeship Fees, Interest Expenses, Interest Paid to Residents other than General Government, Interest Paid to other General Government Units, Guarantee Fees, Bank Charges, Commitment Fees and Other Financial Charges, all other fees and charges related to loans payable, and losses incurred relative to foreign exchange transactions." />
+            <BudgetInput label="Capital Outlay" value={co} onChange={setCo} tooltip="Include office equipment and furniture and fixtures that have to be procured over the medium-term." />
           </div>
         </section>
 
         <div>
           <FieldLabel>Remarks</FieldLabel>
-          <textarea className={`${inputCls} h-16 resize-none`} value={remarks} onChange={(event) => setRemarks(event.target.value)} />
+          <div className="relative">
+            <textarea className={`${inputCls} h-16 resize-none pr-10`} value={remarks} onChange={(event) => setRemarks(event.target.value)} />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="absolute right-2 top-2 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-100"
+                >
+                  i
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[220px]">
+                Optional remarks or additional information.
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       </div>
+      </TooltipProvider>
     </ModalShell>
   );
 }
@@ -195,22 +274,39 @@ function BudgetInput({
   label,
   value,
   onChange,
+  tooltip,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  tooltip: string;
 }) {
   return (
-    <div>
+    <div className="flex h-full flex-col justify-between gap-2">
       <FieldLabel>{label}</FieldLabel>
-      <input
-        className={`${inputCls} text-right font-mono`}
-        type="number"
-        min={0}
-        step="0.01"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
+      <div className="relative">
+        <input
+          className={`${inputCls} text-right font-mono pr-10`}
+          type="number"
+          min={0}
+          step="0.01"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white text-xs font-bold text-gray-500 shadow-sm hover:bg-gray-100"
+            >
+              i
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[220px]">
+            {tooltip}
+          </TooltipContent>
+        </Tooltip>
+      </div>
     </div>
   );
 }
