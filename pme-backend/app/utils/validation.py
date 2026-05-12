@@ -54,6 +54,15 @@ def validate_positive_amount(value: Decimal, field_name: str = "amount"):
         raise ValueError(f"{field_name} must be greater than zero")
 
 
+def validate_money_scale(value: Decimal | None, field_name: str = "amount") -> Decimal | None:
+    """
+    Keep stored money values to cents. This rejects values like 123.456 instead of rounding them.
+    """
+    if value is not None and value.as_tuple().exponent < -2:
+        raise ValueError(f"{field_name} can only have up to 2 decimal places")
+    return value
+
+
 def validate_not_exceed(value: Decimal, limit: Decimal, field_name="value"):
     """
     This makes sure one value does not go past the limit it should stay under

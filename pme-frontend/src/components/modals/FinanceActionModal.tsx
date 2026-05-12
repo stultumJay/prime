@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "@/styles/materialSymbols.css";
 import type { ProjectDetailPayload } from "@/services/project.service";
+import { hasMaxTwoDecimalPlaces, normalizeMoneyInput } from "@/lib/format";
 
 export type FinanceActionKind = "allotment" | "obligation" | "disbursement";
 
@@ -76,7 +77,8 @@ function money(value: number) {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
     currency: "PHP",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(value);
 }
 
@@ -131,6 +133,7 @@ export default function FinanceActionModal({
     Number.isFinite(numericAmount) &&
     numericAmount > 0 &&
     numericAmount <= currentLimit &&
+    hasMaxTwoDecimalPlaces(amount) &&
     (kind !== "allotment" || reference.trim()) &&
     (kind !== "obligation" || (reference.trim() && payee.trim())) &&
     !submitting;
@@ -298,7 +301,7 @@ export default function FinanceActionModal({
               label={meta.amountLabel}
               type="number"
               value={amount}
-              onChange={setAmount}
+              onChange={(value) => setAmount(normalizeMoneyInput(value))}
               min="0.01"
               max={String(currentLimit)}
               step="0.01"

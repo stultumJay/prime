@@ -4,6 +4,7 @@ from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, field_validator
+from app.utils.validation import validate_money_scale
 
 _Z = Decimal("0.00")
 
@@ -19,6 +20,7 @@ class ObligationCreate(BaseModel):
     @field_validator("obligation_amount")
     @classmethod
     def positive(cls, v: Decimal) -> Decimal:
+        validate_money_scale(v, "obligation_amount")
         if v <= _Z:
             raise ValueError("obligation_amount must be greater than zero.")
         return v
@@ -34,6 +36,7 @@ class ObligationUpdate(BaseModel):
     @field_validator("obligation_amount")
     @classmethod
     def positive(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        validate_money_scale(v, "obligation_amount")
         if v is not None and v <= _Z:
             raise ValueError("obligation_amount must be greater than zero.")
         return v

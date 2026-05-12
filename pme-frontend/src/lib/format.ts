@@ -1,14 +1,31 @@
 import type { ProjectStatus } from "./schema";
 
+const PHP_SYMBOL = "\u20b1";
+const DASH = "\u2014";
+
 export function formatPHP(amount: number): string {
-  if (amount >= 1_000_000) return `₱${(amount / 1_000_000).toFixed(2)}M`;
-  if (amount >= 1_000) return `₱${(amount / 1_000).toFixed(1)}K`;
-  return `₱${amount.toFixed(0)}`;
+  if (amount >= 1_000_000) return `${PHP_SYMBOL}${(amount / 1_000_000).toFixed(2)}M`;
+  if (amount >= 1_000) return `${PHP_SYMBOL}${(amount / 1_000).toFixed(1)}K`;
+  return `${PHP_SYMBOL}${amount.toFixed(2)}`;
 }
 
 export function formatPHPFull(amount?: number | null): string {
-  if (typeof amount !== "number") return "—";
-  return `₱${amount.toLocaleString("en-PH", { maximumFractionDigits: 0 })}`;
+  if (typeof amount !== "number" || !Number.isFinite(amount)) return DASH;
+  return `${PHP_SYMBOL}${amount.toLocaleString("en-PH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+export function hasMaxTwoDecimalPlaces(value: string): boolean {
+  return /^(\d+)?(\.\d{0,2})?$/.test(value);
+}
+
+export function normalizeMoneyInput(value: string): string {
+  const normalized = value.replace(/,/g, "").trim();
+  return hasMaxTwoDecimalPlaces(normalized)
+    ? normalized
+    : normalized.replace(/^(\d*\.?\d{0,2}).*$/, "$1");
 }
 
 export const STATUS_LABEL: Record<ProjectStatus, string> = {
@@ -44,7 +61,7 @@ export function formatDate(iso: string): string {
 
 export function formatDateTime(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return DASH;
 
   return d.toLocaleString("en-PH", {
     year: "numeric",
@@ -57,7 +74,7 @@ export function formatDateTime(iso: string): string {
 
 export function formatRelativeTime(iso: string): string {
   const time = new Date(iso).getTime();
-  if (Number.isNaN(time)) return "—";
+  if (Number.isNaN(time)) return DASH;
 
   const diffMs = Date.now() - time;
   const minutes = Math.floor(diffMs / (1000 * 60));
