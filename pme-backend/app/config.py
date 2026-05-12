@@ -25,14 +25,6 @@ class Settings(BaseSettings):
     FRONTEND_CLEARANCE_URL: Optional[str] = None
 
     # ─────────────────────────────
-    # GOOGLE DRIVE
-    # ─────────────────────────────
-    GOOGLE_CLIENT_ID: Optional[str] = None
-    GOOGLE_CLIENT_SECRET: Optional[str] = None
-    GOOGLE_REFRESH_TOKEN: Optional[str] = None
-    GOOGLE_DRIVE_FOLDER_ID: Optional[str] = None
-
-    # ─────────────────────────────
     # EXTERNAL SERVICES
     # ─────────────────────────────
     DOCUMENT_TRACKING_API_BASE_URL: Optional[str] = None

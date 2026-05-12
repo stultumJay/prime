@@ -104,7 +104,7 @@ def run():
         # 3. PHASES
         # =========================
         phases = [
-            ("Prelim", Decimal("10.00")),
+            ("Preliminary", Decimal("10.00")),
             ("Procurement", Decimal("20.00")),
             ("Construction", Decimal("60.00")),
             ("Testing", Decimal("10.00")),
