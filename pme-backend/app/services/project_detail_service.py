@@ -366,6 +366,8 @@ def upsert_project_phase_dates(
     """
     # This either updates the existing project phase row or creates it first when that phase has not been scheduled yet
     _ensure_project(db, project_id)
+    if planned_start and planned_end and planned_end < planned_start:
+        raise HTTPException(400, "Phase end date must not be earlier than phase start date.")
 
     phase_config = db.query(PhaseConfig).filter(PhaseConfig.phase_name == phase_name).first()
     if not phase_config:

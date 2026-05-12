@@ -5,7 +5,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from app.db.session import get_db
 from app.core.dependencies import get_current_user
@@ -42,6 +42,12 @@ router = APIRouter(prefix="/projects", tags=["Projects"])
 class ProjectPhaseDateUpdate(BaseModel):
     planned_start: Optional[date] = None
     planned_end: Optional[date] = None
+
+    @model_validator(mode="after")
+    def validate_planned_dates(self):
+        if self.planned_start and self.planned_end and self.planned_end < self.planned_start:
+            raise ValueError("planned_end must not be earlier than planned_start.")
+        return self
 
 
 # CREATE
