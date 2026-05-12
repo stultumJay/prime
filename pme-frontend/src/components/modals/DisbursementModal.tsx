@@ -4,7 +4,7 @@ import {
   createDisbursement,
   type ObligationOption,
 } from "@/services/projectActions.service";
-import { formatPHPFull } from "@/lib/format";
+import { formatPHPFull, hasMaxTwoDecimalPlaces, normalizeMoneyInput } from "@/lib/format";
 import {
   ModalShell,
   FieldLabel,
@@ -70,6 +70,7 @@ export default function DisbursementModal({
   const isValid =
     obligationId &&
     parsedAmount > 0 &&
+    hasMaxTwoDecimalPlaces(disbursementAmount) &&
     disbursementDate &&
     selected !== undefined &&
     !exceedsUnpaid;
@@ -217,10 +218,11 @@ export default function DisbursementModal({
             <input
               type="number"
               min={0}
+              step="0.01"
               className={`${inputCls} pl-12 py-4 text-2xl font-black`}
               placeholder="0.00"
               value={disbursementAmount}
-              onChange={(e) => setDisbursementAmount(e.target.value)}
+              onChange={(e) => setDisbursementAmount(normalizeMoneyInput(e.target.value))}
             />
           </div>
           {exceedsUnpaid && (

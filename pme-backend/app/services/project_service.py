@@ -205,6 +205,10 @@ def update_project(
         next_values.get("location_lat", project.location_lat),
         next_values.get("location_lng", project.location_lng),
     )
+    expected_start = next_values.get("expected_start_date", project.expected_start_date)
+    expected_end = next_values.get("expected_end_date", project.expected_end_date)
+    if expected_start and expected_end and expected_end < expected_start:
+        raise HTTPException(400, "Expected end date must not be earlier than expected start date.")
 
     # exclude_unset keeps existing values untouched when a field was not included in the request
     for field, value in next_values.items():

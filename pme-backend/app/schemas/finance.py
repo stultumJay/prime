@@ -6,6 +6,7 @@ from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, field_validator
+from app.utils.validation import validate_money_scale
 
 # ── Expense class guard — the ONLY valid values in the entire system ───────
 VALID_EXPENSE_CLASSES = {"PS", "MOOE", "FE", "CO"}
@@ -89,6 +90,7 @@ class AppropriationFundSourceCreate(BaseModel):
     @field_validator("appropriated_amount")
     @classmethod
     def positive_amount(cls, v: Decimal) -> Decimal:
+        validate_money_scale(v, "appropriated_amount")
         if v <= _Z:
             raise ValueError("appropriated_amount must be greater than zero.")
         return v
@@ -104,6 +106,7 @@ class AppropriationFundSourceUpdate(BaseModel):
     @field_validator("appropriated_amount")
     @classmethod
     def positive_amount(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        validate_money_scale(v, "appropriated_amount")
         if v is not None and v <= _Z:
             raise ValueError("appropriated_amount must be greater than zero.")
         return v

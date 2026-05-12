@@ -599,8 +599,14 @@ function normalizeDetail(
           weight_percent: toNumber(phase.weight_percent, 0),
           progress_percent: 0,
         }));
+  const totalPhaseWeight = phases.reduce((total, phase) => total + Math.max(0, phase.weight_percent), 0);
   const overallProgress = phases.length
-    ? phases.reduce((total, phase) => total + phase.progress_percent, 0) / phases.length
+    ? totalPhaseWeight > 0
+      ? phases.reduce(
+          (total, phase) => total + phase.progress_percent * (Math.max(0, phase.weight_percent) / totalPhaseWeight),
+          0,
+        )
+      : phases.reduce((total, phase) => total + phase.progress_percent, 0) / phases.length
     : 0;
   const financials = raw.financials ?? {};
   const financeLines = Array.isArray(financeSummary?.lines) ? financeSummary.lines : [];

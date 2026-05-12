@@ -5,7 +5,8 @@ from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, computed_field, field_validator
+from app.utils.validation import validate_money_scale
 
 _Z = Decimal("0.00")
 
@@ -70,6 +71,12 @@ class AIPCreate(BaseModel):
     target_q4:             int = 0
     performance_remarks:   Optional[str] = None
 
+    @field_validator("proposed_budget_ps", "proposed_budget_mooe", "proposed_budget_fe", "proposed_budget_co")
+    @classmethod
+    def validate_budget_scale(cls, v: Decimal) -> Decimal:
+        validate_money_scale(v, "proposed_budget")
+        return v
+
 
 # ── Request: update ────────────────────────────────────────────────────────
 
@@ -92,6 +99,12 @@ class AIPUpdate(BaseModel):
     actual_q3:             Optional[int] = None
     actual_q4:             Optional[int] = None
     performance_remarks:   Optional[str] = None
+
+    @field_validator("proposed_budget_ps", "proposed_budget_mooe", "proposed_budget_fe", "proposed_budget_co")
+    @classmethod
+    def validate_budget_scale(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        validate_money_scale(v, "proposed_budget")
+        return v
 
 
 # ── Response ───────────────────────────────────────────────────────────────
