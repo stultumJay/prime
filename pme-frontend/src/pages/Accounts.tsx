@@ -8,6 +8,7 @@ import { EditUserModal } from "@/components/modals/account_management/EditUserMo
 import { ResetPasswordModal } from "@/components/modals/account_management/ResetPasswordModal";
 import {
   createUser,
+  getMyProfile,
   listUsers,
   resetUserPassword,
   roleBadgeClass,
@@ -23,6 +24,7 @@ import { listOffices, type OfficeConfig } from "@/services/settings.service";
 
 export default function AccountsPage() {
   const [users, setUsers] = useState<UserAccount[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [offices, setOffices] = useState<OfficeConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,9 +43,14 @@ export default function AccountsPage() {
     try {
       setLoading(true);
       setError(null);
-      const [items, officeItems] = await Promise.all([listUsers(), listOffices()]);
+      const [items, officeItems, profile] = await Promise.all([
+        listUsers(),
+        listOffices(),
+        getMyProfile(),
+      ]);
       setUsers(items);
       setOffices(officeItems);
+      setCurrentUserId(profile.user_id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load user accounts.");
     } finally {
@@ -249,7 +256,9 @@ export default function AccountsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((user) => (
+                  filtered.map((user) => {
+                    const isCurrentUser = currentUserId === user.user_id;
+                    return (
                     <tr key={user.user_id} className="border-t border-border/60 hover:bg-muted/40">
                       <td className="px-4 py-3 font-semibold text-foreground">
                         {user.full_name}
@@ -282,24 +291,27 @@ export default function AccountsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <IconActionButton
-                            title="Edit user"
-                            onClick={() => openEdit(user)}
-                          >
-                            <PenLine className="h-4 w-4" />
-                          </IconActionButton>
+                        {isCurrentUser ? null : (
+                          <div className="flex items-center justify-end gap-2">
+                            <IconActionButton
+                              title="Edit user"
+                              onClick={() => openEdit(user)}
+                            >
+                              <PenLine className="h-4 w-4" />
+                            </IconActionButton>
 
-                          <IconActionButton
-                            title="Reset password"
-                            onClick={() => openReset(user)}
-                          >
-                            <KeyRound className="h-4 w-4" />
-                          </IconActionButton>
-                        </div>
+                            <IconActionButton
+                              title="Reset password"
+                              onClick={() => openReset(user)}
+                            >
+                              <KeyRound className="h-4 w-4" />
+                            </IconActionButton>
+                          </div>
+                        )}
                       </td>
                     </tr>
-                  ))
+                  );
+                  })
                 )}
               </tbody>
             </table>
