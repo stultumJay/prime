@@ -1,0 +1,42 @@
+name: Daily Database Backup
+
+on:
+  schedule:
+    - cron: '0 18 * * 1-4'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client gzip
+
+      - name: Create Backup
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          mkdir -p backups
+
+          TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
+
+          pg_dump "$DATABASE_URL" \
+            --format=custom \
+            --no-owner \
+            --no-privileges \
+            > backups/backup-$TIMESTAMP.dump
+
+          gzip backups/backup-$TIMESTAMP.dump
+
+      - name: Upload Backup Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-backup
+          path: backups/*.gz
+          retention-days: 7
