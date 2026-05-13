@@ -1,0 +1,4 @@
+fiscal_year,sector_name,program_code,office_name,project_code,project_title,project_description,barangay,street,location_lat,location_lng,status,expected_start_date,expected_end_date
+2025,Infrastructure,001,Office of the Municipal Engineer/Building Official,PRJ-2025-001,Barangay Road Improvement,Concrete road reconstruction in Poblacion,Poblacion,Rizal Street,8.4542,124.6319,planned,2025-01-15,2025-06-30
+2025,Social,001,Office of the Municipal Health Officer,PRJ-2025-002,Barangay Health Center Upgrade,Renovation of barangay health center,Carmen,San Jose Street,8.4811,124.6478,ongoing,2025-02-01,2025-08-15
+2025,Economic,001,Office of the Municipal Cooperatives Development Officer,PRJ-2025-003,Local Livelihood Skills Training,Community livelihood training program,Mabini,Del Pilar Road,8.4620,124.6520,planned,2025-03-01,2025-09-30
