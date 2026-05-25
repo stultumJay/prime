@@ -49,7 +49,11 @@ def _month_bounds(dt: datetime) -> tuple[date, date]:
     return date(dt.year, dt.month, 1), date(dt.year, dt.month, last_day)
 
 
-def _financial_totals_for_aip_ids(db: Session, aip_ids_select):
+def _financial_totals_for_aip_ids(
+    db: Session,
+    aip_ids_select,
+    up_to_date: Optional[date] = None,
+):
     """
     Walk: project_aip → appropriation → appr_fund_source → allotment → obligation → disbursement.
     Returns (allotted, obligated, disbursed).
@@ -63,25 +67,40 @@ def _financial_totals_for_aip_ids(db: Session, aip_ids_select):
         AppropriationFundSource.appropriation_id.in_(appr_ids)
     )
 
-    allot_ids = select(Allotment.allotment_id).where(
+    allot_ids_all = select(Allotment.allotment_id).where(
         Allotment.appr_fund_source_id.in_(afs_ids)
     )
+    allot_ids_for_allotted = allot_ids_all
+    if up_to_date is not None:
+        allot_ids_for_allotted = allot_ids_for_allotted.where(
+            Allotment.release_date <= up_to_date
+        )
 
-    oblig_ids = select(Obligation.obligation_id).where(
-        Obligation.allotment_id.in_(allot_ids)
+    oblig_ids_all = select(Obligation.obligation_id).where(
+        Obligation.allotment_id.in_(allot_ids_all)
     )
+    oblig_ids_for_obligated = oblig_ids_all
+    if up_to_date is not None:
+        oblig_ids_for_obligated = oblig_ids_for_obligated.where(
+            Obligation.obligation_date <= up_to_date
+        )
 
     allotted = db.query(
         func.coalesce(func.sum(Allotment.amount_released), _Z)
-    ).filter(Allotment.allotment_id.in_(allot_ids)).scalar() or _Z
+    ).filter(Allotment.allotment_id.in_(allot_ids_for_allotted)).scalar() or _Z
 
     obligated = db.query(
         func.coalesce(func.sum(Obligation.obligation_amount), _Z)
-    ).filter(Obligation.obligation_id.in_(oblig_ids)).scalar() or _Z
+    ).filter(Obligation.obligation_id.in_(oblig_ids_for_obligated)).scalar() or _Z
 
-    disbursed = db.query(
+    disbursed_query = db.query(
         func.coalesce(func.sum(Disbursement.disbursement_amount), _Z)
-    ).filter(Disbursement.obligation_id.in_(oblig_ids)).scalar() or _Z
+    ).filter(Disbursement.obligation_id.in_(oblig_ids_all))
+    if up_to_date is not None:
+        disbursed_query = disbursed_query.filter(
+            Disbursement.disbursement_date <= up_to_date
+        )
+    disbursed = disbursed_query.scalar() or _Z
 
     return allotted, obligated, disbursed
 
@@ -345,7 +364,11 @@ def generate_physical_financial_report(
 # REPORT ROUTER ENDPOINTS
 # ─────────────────────────────────────────────
 
-def get_project_summary_report(db: Session, fiscal_year: int) -> list:
+def get_project_summary_report(
+    db: Session,
+    fiscal_year: int,
+    up_to_date: Optional[date] = None,
+) -> list:
     """Project-level summary for the given fiscal year."""  
     rows = (
         db.query(
@@ -385,18 +408,29 @@ def get_project_summary_report(db: Session, fiscal_year: int) -> list:
         aip_ids_select = select(ProjectAIP.project_aip_id).where(
             ProjectAIP.project_aip_id == r.project_aip_id
         )
-        allotted, obligated, disbursed = _financial_totals_for_aip_ids(db, aip_ids_select)
-
-        appr_ids_select = select(Appropriation.appropriation_id).where(
-            Appropriation.project_aip_id == r.project_aip_id,
-            Appropriation.is_active.is_(True),
+        allotted, obligated, disbursed = _financial_totals_for_aip_ids(
+            db,
+            aip_ids_select,
+            up_to_date=up_to_date,
         )
 
-        approved = db.query(
-            func.coalesce(func.sum(AppropriationFundSource.appropriated_amount), _Z)
-        ).filter(
-            AppropriationFundSource.appropriation_id.in_(appr_ids_select)
-        ).scalar() or _Z
+        approved_query = (
+            db.query(
+                func.coalesce(
+                    func.sum(AppropriationFundSource.appropriated_amount),
+                    _Z,
+                )
+            )
+            .join(
+                Appropriation,
+                AppropriationFundSource.appropriation_id == Appropriation.appropriation_id,
+            )
+            .filter(
+                Appropriation.project_aip_id == r.project_aip_id,
+                Appropriation.is_active.is_(True),
+            )
+        )
+        approved = approved_query.scalar() or _Z
 
         proposed = sum([
             Decimal(str(r.proposed_budget_ps   or 0)),

@@ -7,7 +7,7 @@ from typing import List
 from sqlalchemy.orm import Session
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PYTHON_ROOT = os.path.abspath(os.path.join(HERE, "..", "pme-backend"))
+PYTHON_ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 if PYTHON_ROOT not in sys.path:
     sys.path.insert(0, PYTHON_ROOT)
 
@@ -15,7 +15,7 @@ from app.db.session import SessionLocal
 from app.models.program import Program
 from app.models.sector import Sector
 
-DEFAULT_CSV_FILE = os.path.join(HERE, "csv", "programs_2025.csv")
+DEFAULT_CSV_FILE = os.path.join(HERE, "csv", "programs.csv")
 
 
 def load_csv(path: str) -> List[dict]:
@@ -57,44 +57,59 @@ def run(csv_path: str) -> None:
 
     try:
         rows = load_csv(csv_path)
-        inserted = 0
+        imported = 0
+        skipped = 0
+        seen_keys: set[tuple[str, str]] = set()
 
         for index, row in enumerate(rows, start=2):
-            validated = validate_program_row(row, index)
-            sector_name = validated["sector_name"]
-            program_code = validated["program_code"]
+            try:
+                validated = validate_program_row(row, index)
+                sector_name = validated["sector_name"]
+                program_code = validated["program_code"]
 
-            sector = (
-                db.query(Sector)
-                .filter(Sector.sector_name == sector_name)
-                .first()
-            )
-            if not sector:
-                raise ValueError(f"Row {index}: Sector not found: '{sector_name}'")
-
-            existing = (
-                db.query(Program)
-                .filter(
-                    Program.sector_id == sector.sector_id,
-                    Program.program_code == program_code,
+                sector = (
+                    db.query(Sector)
+                    .filter(Sector.sector_name == sector_name)
+                    .first()
                 )
-                .first()
-            )
-            if existing:
-                print(f"Skipping existing program: {sector_name} / {program_code}")
-                continue
+                if not sector:
+                    raise ValueError(f"Row {index}: sector not found: '{sector_name}'")
 
-            program = Program(
-                sector_id=sector.sector_id,
-                program_code=program_code,
-                program_name=validated["program_name"],
-                description=None,
-            )
-            db.add(program)
-            inserted += 1
+                row_key = (str(sector.sector_id), program_code)
+                if row_key in seen_keys:
+                    raise ValueError(
+                        f"Row {index}: duplicate program in CSV: {sector_name} / {program_code}"
+                    )
+
+                existing = (
+                    db.query(Program)
+                    .filter(
+                        Program.sector_id == sector.sector_id,
+                        Program.program_code == program_code,
+                    )
+                    .first()
+                )
+                if existing:
+                    raise ValueError(
+                        f"Row {index}: program already exists: {sector_name} / {program_code}"
+                    )
+
+                program = Program(
+                    sector_id=sector.sector_id,
+                    program_code=program_code,
+                    program_name=validated["program_name"],
+                    description=None,
+                )
+                db.add(program)
+                imported += 1
+                seen_keys.add(row_key)
+            except ValueError as exc:
+                skipped += 1
+                print(f"Skipping program. {exc}")
 
         db.commit()
-        print(f"Program migration completed. Inserted: {inserted}")
+        print(f"Programs Imported: {imported}")
+        print(f"Programs Skipped: {skipped}")
 
     except Exception:
         db.rollback()

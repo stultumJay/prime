@@ -31,13 +31,25 @@ function normalizeStatus(value: string | null | undefined) {
     .toLowerCase();
 }
 
+function getMonthEnd(value: string): string {
+  const [yearText, monthText] = value.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = new Date(year, month, 0).getDate();
+  return `${yearText}-${monthText}-${String(day).padStart(2, "0")}`;
+}
+
+function getQuarterForMonth(value: string): number {
+  const month = toNumber(value.split("-")[1], 1);
+  return clamp(Math.ceil(month / 3), 1, 4);
+}
+
 function formatPHP(amount: number): string {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: amount >= 1_000_000 ? 1 : 2,
-    minimumFractionDigits: amount >= 1_000_000 ? 1 : 2,
-  }).format(Number.isFinite(amount) ? amount : 0);
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+  return `P ${new Intl.NumberFormat("en-PH", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  }).format(safeAmount)}`;
 }
 
 type ProjectSummaryItem = {
@@ -75,6 +87,8 @@ export interface MonitoringTrendItem {
   month: string;
   allocated: number;
   utilized: number;
+  allocatedAmount: number;
+  disbursedAmount: number;
   highlight?: boolean;
   future?: boolean;
 }
@@ -107,13 +121,17 @@ export interface MonitoringQuery {
   month?: string;
 }
 
-function computePhysical(item: ProjectSummaryItem): number {
+function computePhysical(item: ProjectSummaryItem, quarter: number): number {
   const target = toNumber(item.target_total, 0);
-  const actuals =
-    toNumber(item.actual_q1) +
-    toNumber(item.actual_q2) +
-    toNumber(item.actual_q3) +
-    toNumber(item.actual_q4);
+  const quarterlyActuals = [
+    toNumber(item.actual_q1),
+    toNumber(item.actual_q2),
+    toNumber(item.actual_q3),
+    toNumber(item.actual_q4),
+  ];
+  const actuals = quarterlyActuals
+    .slice(0, quarter)
+    .reduce((sum, value) => sum + value, 0);
 
   if (target > 0) {
     return clamp((actuals / target) * 100, 0, 100);
@@ -129,11 +147,13 @@ export async function getMonitoringData(
   options: MonitoringQuery = {},
 ): Promise<MonitoringPayload> {
   const fallbackMonth = new Date().toISOString().slice(0, 7);
-  const selectedMonth = /^\d{4}-\d{2}$/.test(options.month ?? "")
+  const selectedMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(options.month ?? "")
     ? options.month!
     : fallbackMonth;
   const [yearStr, monthStr] = selectedMonth.split("-");
   const fiscalYear = Number(yearStr);
+  const upToDate = getMonthEnd(selectedMonth);
+  const selectedQuarter = getQuarterForMonth(selectedMonth);
 
   const [trends, projects] = await Promise.all([
     requestJson<TrendResponse>("/dashboard/allocation-vs-disbursement", {
@@ -144,6 +164,7 @@ export async function getMonitoringData(
     }),
     requestJson<ProjectSummaryResponse>("/reports/projects-summary", {
       fiscal_year: fiscalYear,
+      up_to_date: upToDate,
     }),
   ]);
 
@@ -211,13 +232,20 @@ export async function getMonitoringData(
     1,
   );
 
-  const budgetTrends: MonitoringTrendItem[] = trends.map((trend, index) => ({
-    month: trend.month.toUpperCase(),
-    allocated: Math.max(0, (toNumber(trend.allocated) / maxTrendValue) * 100),
-    utilized: Math.max(0, (toNumber(trend.utilized) / maxTrendValue) * 100),
-    highlight: index === trends.length - 1,
-    future: false,
-  }));
+  const budgetTrends: MonitoringTrendItem[] = trends.map((trend, index) => {
+    const allocatedAmount = toNumber(trend.allocated);
+    const disbursedAmount = toNumber(trend.utilized);
+
+    return {
+      month: trend.month.toUpperCase(),
+      allocated: Math.max(0, (allocatedAmount / maxTrendValue) * 100),
+      utilized: Math.max(0, (disbursedAmount / maxTrendValue) * 100),
+      allocatedAmount,
+      disbursedAmount,
+      highlight: index === trends.length - 1,
+      future: false,
+    };
+  });
 
   const projectSummaries: MonitoringProjectSummary[] = projects.map((p) => {
     const allottedAmt = toNumber(p.allotted);
@@ -229,7 +257,7 @@ export async function getMonitoringData(
       sector: p.sector || "Unassigned",
       budget: formatPHP(toNumber(p.approved_appropriation)),
       financial: allottedAmt > 0 ? (disbursedAmt / allottedAmt) * 100 : 0,
-      physical: computePhysical(p),
+      physical: computePhysical(p, selectedQuarter),
     };
   });
 
