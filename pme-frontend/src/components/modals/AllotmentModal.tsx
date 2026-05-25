@@ -4,7 +4,7 @@ import {
   type AppropriationFundSourceOption,
   type CurrentAppropriationInfo,
 } from "@/services/projectActions.service";
-import { formatPHPFull } from "@/lib/format";
+import { formatPHPFull, hasMaxTwoDecimalPlaces, normalizeMoneyInput } from "@/lib/format";
 import {
   ModalShell,
   FieldLabel,
@@ -74,6 +74,7 @@ export default function AllotmentModal({
     aroNumber.trim().length > 0 &&
     releaseDate &&
     amountReleased > 0 &&
+    hasMaxTwoDecimalPlaces(thisRelease) &&
     selectedSource !== undefined &&
     amountReleased <= selectedSource.unreleased;
 
@@ -244,11 +245,12 @@ export default function AllotmentModal({
                 type="number"
                 min={0}
                 max={selectedSource?.unreleased ?? 0}
+                step="0.01"
                 className={`${inputCls} pl-8 border-primary/60`}
                 placeholder="0.00"
                 value={thisRelease}
                 disabled={!selectedSource}
-                onChange={(e) => setThisRelease(e.target.value)}
+                onChange={(e) => setThisRelease(normalizeMoneyInput(e.target.value))}
               />
             </div>
             {amountReleased > 0 &&

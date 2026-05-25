@@ -35,12 +35,6 @@ function getProgressTone(value: number) {
   return "bg-primary text-slate-900";
 }
 
-function formatCompactPHP(amount: number) {
-  if (amount >= 1_000_000) return `PHP ${(amount / 1_000_000).toFixed(1)}M`;
-  if (amount >= 1_000) return `PHP ${(amount / 1_000).toFixed(1)}K`;
-  return formatPHP(amount).replace("₱", "PHP ");
-}
-
 function escapeCsv(value: unknown) {
   const text = String(value ?? "");
   if (/[",\n]/.test(text)) return `"${text.replaceAll('"', '""')}"`;
@@ -88,10 +82,7 @@ function useCountUp(value: number, enabled: boolean, duration = 700) {
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
-    if (!enabled) {
-      setDisplayValue(0);
-      return;
-    }
+    if (!enabled) return;
 
     let frame = 0;
     let startTime: number | null = null;
@@ -111,7 +102,7 @@ function useCountUp(value: number, enabled: boolean, duration = 700) {
     return () => cancelAnimationFrame(frame);
   }, [duration, enabled, value]);
 
-  return displayValue;
+  return enabled ? displayValue : 0;
 }
 
 export default function Monitoring() {
@@ -163,9 +154,8 @@ export default function Monitoring() {
     };
   }, [selectedMonth]);
 
-  const projectSummaries = payload?.projectSummaries ?? [];
-
   const filteredProjects = useMemo(() => {
+    const projectSummaries = payload?.projectSummaries ?? [];
     const normalizedSearch = searchTerm.trim().toLowerCase();
     if (!normalizedSearch) return projectSummaries;
 
@@ -174,7 +164,7 @@ export default function Monitoring() {
         value.toLowerCase().includes(normalizedSearch),
       ),
     );
-  }, [searchTerm, projectSummaries]);
+  }, [payload?.projectSummaries, searchTerm]);
 
   const pageCount = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -244,7 +234,7 @@ export default function Monitoring() {
           label: "Appropriated",
           value: (
             <span className={`transition-all duration-500 ${financialKpisRevealed ? "opacity-100 blur-0" : "opacity-0 blur-sm"}`}>
-              {formatCompactPHP(animatedAppropriated)}
+              {formatPHP(animatedAppropriated)}
             </span>
           ),
           icon: "account_balance_wallet",
@@ -416,31 +406,45 @@ export default function Monitoring() {
                 </div>
 
                 <div className="flex min-h-[175px] flex-1 items-end justify-between gap-4 px-1 pt-4">
-                  {(payload?.budgetTrends ?? []).map((trend) => (
-                    <div
-                      className={`flex flex-1 flex-col items-center ${trend.future ? "opacity-40" : ""}`}
-                      key={trend.month}
-                    >
-                      <div className="relative flex h-36 w-full items-end justify-center">
-                        <div
-                          className="absolute bottom-0 w-full max-w-[76px] rounded-t-lg bg-slate-100 transition-all duration-700 ease-out"
-                          style={{ height: `${budgetTrendRevealed ? trend.allocated : 0}%` }}
-                        />
-                        {!trend.future && (
-                          <div
-                            className="relative z-10 flex w-full max-w-[76px] items-end justify-center rounded-t-lg bg-primary/35 transition-all duration-700 ease-out"
-                            style={{
-                              height: `${budgetTrendRevealed ? Math.max(trend.utilized, 28) : 0}%`,
-                            }}
-                          >
-                            <div
-                              className="w-full rounded-t-lg bg-primary transition-all duration-700 ease-out"
-                              style={{
-                                height: `${budgetTrendRevealed ? Math.max(trend.utilized - 18, 18) : 0}%`,
-                              }}
-                            />
+                  {(payload?.budgetTrends ?? []).map((trend) => {
+                    const allocatedHeight =
+                      trend.allocatedAmount > 0 ? Math.max(trend.allocated, 8) : 0;
+                    const disbursedHeight =
+                      trend.disbursedAmount > 0 ? Math.max(trend.utilized, 8) : 0;
+
+                    return (
+                      <div
+                        className={`group flex flex-1 flex-col items-center ${trend.future ? "opacity-40" : ""}`}
+                        key={trend.month}
+                        tabIndex={0}
+                      >
+                        <div className="relative flex h-36 w-full items-end justify-center">
+                          <div className="pointer-events-none absolute bottom-[calc(100%+0.75rem)] left-1/2 z-30 min-w-44 -translate-x-1/2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-[10px] font-bold text-slate-700 opacity-0 shadow-lg transition group-hover:opacity-100 group-focus:opacity-100">
+                            <p className="mb-1 text-xs font-black text-slate-950">
+                              {trend.month}
+                            </p>
+                            <p>Allocated: {formatPHP(trend.allocatedAmount)}</p>
+                            <p>Disbursed: {formatPHP(trend.disbursedAmount)}</p>
                           </div>
-                        )}
+                          <div
+                            className="absolute bottom-0 w-full max-w-[76px] rounded-t-lg bg-slate-100 transition-all duration-700 ease-out"
+                            style={{ height: `${budgetTrendRevealed ? allocatedHeight : 0}%` }}
+                          />
+                          {!trend.future && (
+                            <div
+                              className="relative z-10 flex w-full max-w-[76px] items-end justify-center rounded-t-lg bg-primary/35 transition-all duration-700 ease-out"
+                              style={{
+                                height: `${budgetTrendRevealed ? disbursedHeight : 0}%`,
+                              }}
+                            >
+                              <div
+                                className="w-full rounded-t-lg bg-primary transition-all duration-700 ease-out"
+                                style={{
+                                  height: `${budgetTrendRevealed ? disbursedHeight : 0}%`,
+                                }}
+                              />
+                            </div>
+                          )}
                       </div>
                       <span
                         className={`mt-2 text-[10px] font-black ${trend.highlight ? "text-slate-950" : "text-slate-400"}`}
@@ -448,7 +452,8 @@ export default function Monitoring() {
                         {trend.month}
                       </span>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </article>
             </div>

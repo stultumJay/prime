@@ -87,7 +87,8 @@ export default function EditProjectModal({
   const computedStatus = deriveProjectStatus(phases, project.status ?? "planned");
   const computedActualStart = computedStatus === "planned" ? "" : actualStart;
   const computedActualEnd = computedStatus === "completed" ? actualEnd : "";
-  const canSubmit = title.trim().length > 0 && !submitting;
+  const expectedDateInvalid = Boolean(expectedStart && expectedEnd && expectedEnd < expectedStart);
+  const canSubmit = title.trim().length > 0 && !expectedDateInvalid && !submitting;
 
   const submit = () => {
     if (!canSubmit) return;
@@ -140,6 +141,11 @@ export default function EditProjectModal({
           {error ? (
             <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
               {error}
+            </div>
+          ) : null}
+          {expectedDateInvalid ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+              Expected end date must not be earlier than expected start date.
             </div>
           ) : null}
 

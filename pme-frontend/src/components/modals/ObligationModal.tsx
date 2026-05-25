@@ -4,7 +4,7 @@ import {
   createObligation,
   type AllotmentOption,
 } from "@/services/projectActions.service";
-import { formatPHPFull } from "@/lib/format";
+import { formatPHPFull, hasMaxTwoDecimalPlaces, normalizeMoneyInput } from "@/lib/format";
 import {
   ModalShell,
   FieldLabel,
@@ -64,6 +64,7 @@ export default function ObligationModal({ open, onClose, onSaved, year, allotmen
     payee.trim().length > 0 &&
     refDoc.trim().length > 0 &&
     parsedAmount > 0 &&
+    hasMaxTwoDecimalPlaces(obligationAmount) &&
     oblDate &&
     selected !== undefined &&
     !exceedsBalance;
@@ -198,10 +199,11 @@ export default function ObligationModal({ open, onClose, onSaved, year, allotmen
               <input
                 type="number"
                 min={0}
+                step="0.01"
                 className={`${inputCls} pl-8`}
                 placeholder="0.00"
                 value={obligationAmount}
-                onChange={(e) => setObligationAmount(e.target.value)}
+                onChange={(e) => setObligationAmount(normalizeMoneyInput(e.target.value))}
               />
             </div>
             {exceedsBalance && (

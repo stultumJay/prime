@@ -63,8 +63,6 @@ const ProgressLogModal = lazy(() => import("@/components/modals/ProgressLogModal
 const ResolveIssueModal = lazy(() => import("@/components/modals/ResolveIssueModal"));
 
 function pesoShort(amount: number) {
-  if (amount >= 1_000_000) return `PHP ${(amount / 1_000_000).toFixed(1)}M`;
-  if (amount >= 1_000) return `PHP ${(amount / 1_000).toFixed(0)}K`;
   return formatPHPFull(amount);
 }
 
@@ -1529,6 +1527,7 @@ function TimelineDateModal({
   }, [phase]);
 
   if (!phase || !open) return null;
+  const dateRangeInvalid = Boolean(startDate && endDate && endDate < startDate);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
@@ -1536,6 +1535,11 @@ function TimelineDateModal({
         <h3 className="text-lg font-black">{phase.phase_name}</h3>
         <p className="mt-1 text-sm text-muted-foreground">Set the planned start and end dates for this phase.</p>
         {error ? <div className="mt-4 rounded border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{error}</div> : null}
+        {dateRangeInvalid ? (
+          <div className="mt-4 rounded border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            End date must not be earlier than start date.
+          </div>
+        ) : null}
         <div className="mt-5 grid gap-4">
           <label className="text-sm font-semibold">
             Start Date
@@ -1552,7 +1556,7 @@ function TimelineDateModal({
           </button>
           <button
             type="button"
-            disabled={submitting}
+            disabled={submitting || dateRangeInvalid}
             onClick={() => void onSubmit({ phaseName: phase.phase_name, planned_start: startDate || null, planned_end: endDate || null })}
             className="rounded bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
           >

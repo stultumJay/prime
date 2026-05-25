@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -18,13 +20,17 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 @router.get("/projects-summary")
 def project_summary(
     fiscal_year: int,
+    up_to_date: Optional[date] = Query(
+        None,
+        description="Optional cumulative cutoff date for month-aware monitoring reports.",
+    ),
     db: Session = Depends(get_db),
     _: UserAccount = Depends(get_current_user),
 ):
     """
     This route returns the project summary data the caller asked for
     """
-    return get_project_summary_report(db, fiscal_year)
+    return get_project_summary_report(db, fiscal_year, up_to_date=up_to_date)
 
 
 @router.get("/budget-utilization")

@@ -1,0 +1,55 @@
+name: Daily Database Backup
+
+on:
+  schedule:
+    - cron: '0 18 * * 1-4'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL 17 Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg lsb-release ca-certificates
+
+          wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
+            sudo gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
+
+          echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | \
+            sudo tee /etc/apt/sources.list.d/pgdg.list
+
+          sudo apt-get update
+
+          sudo apt-get install -y postgresql-client-17 gzip
+
+          pg_dump --version
+
+      - name: Create Backup
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          mkdir -p backups
+
+          TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
+
+          /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" \
+            --format=custom \
+            --no-owner \
+            --no-privileges \
+            --verbose \
+            > backups/backup-$TIMESTAMP.dump
+
+          gzip backups/backup-$TIMESTAMP.dump
+
+      - name: Upload Backup Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-backup
+          path: backups/*.gz
+          retention-days: 7

@@ -4,6 +4,7 @@ from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, field_validator
+from app.utils.validation import validate_money_scale
 
 _Z = Decimal("0.00")
 
@@ -18,6 +19,7 @@ class AllotmentCreate(BaseModel):
     @field_validator("amount_released")
     @classmethod
     def positive(cls, v: Decimal) -> Decimal:
+        validate_money_scale(v, "amount_released")
         if v <= _Z:
             raise ValueError("amount_released must be greater than zero.")
         return v
@@ -36,6 +38,7 @@ class AllotmentUpdate(BaseModel):
     @field_validator("amount_released")
     @classmethod
     def positive(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        validate_money_scale(v, "amount_released")
         if v is not None and v <= _Z:
             raise ValueError("amount_released must be greater than zero.")
         return v

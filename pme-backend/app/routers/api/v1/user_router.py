@@ -102,7 +102,7 @@ def update_user(
     user_id: UUID,
     data: UserUpdate,
     db: Session = Depends(get_db),
-    _: UserAccount = Depends(require_roles("ADMIN")),
+    current_user: UserAccount = Depends(require_roles("ADMIN")),
 ):
     """
     This route updates the update user flow and passes the request into the service layer
@@ -111,6 +111,8 @@ def update_user(
     user = user_service.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
+    if user.user_id == current_user.user_id and data.is_active is False:
+        raise HTTPException(status_code=400, detail="You cannot deactivate your own account.")
     return user_service.update_user(db, user, data)
 
 
@@ -118,7 +120,7 @@ def update_user(
 def delete_user(
     user_id: UUID,
     db: Session = Depends(get_db),
-    _: UserAccount = Depends(require_roles("ADMIN")),
+    current_user: UserAccount = Depends(require_roles("ADMIN")),
 ):
     """
     This route removes the delete user flow and lets the service decide whether it should be deleted or deactivated
@@ -126,6 +128,8 @@ def delete_user(
     user = user_service.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
+    if user.user_id == current_user.user_id:
+        raise HTTPException(status_code=400, detail="You cannot deactivate your own account.")
     user_service.delete_user(db, user)
     return {"message": "User account was set to inactive."}
 

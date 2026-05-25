@@ -1,5 +1,5 @@
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing import Optional
 from datetime import date, datetime
 
@@ -37,6 +37,16 @@ class ProjectBase(BaseModel):
     expected_end_date:   Optional[date] = None
     locational_clearance_status: bool = False
 
+    @model_validator(mode="after")
+    def validate_expected_dates(self):
+        if (
+            self.expected_start_date
+            and self.expected_end_date
+            and self.expected_end_date < self.expected_start_date
+        ):
+            raise ValueError("expected_end_date must not be earlier than expected_start_date.")
+        return self
+
 
 class ProjectCreate(ProjectBase):
     pass
@@ -57,6 +67,22 @@ class ProjectUpdate(BaseModel):
     status:              Optional[str]   = None
     is_integrated:       Optional[bool]  = None
     locational_clearance_status: Optional[bool] = None
+
+    @model_validator(mode="after")
+    def validate_date_ranges(self):
+        if (
+            self.expected_start_date
+            and self.expected_end_date
+            and self.expected_end_date < self.expected_start_date
+        ):
+            raise ValueError("expected_end_date must not be earlier than expected_start_date.")
+        if (
+            self.actual_start_date
+            and self.actual_end_date
+            and self.actual_end_date < self.actual_start_date
+        ):
+            raise ValueError("actual_end_date must not be earlier than actual_start_date.")
+        return self
 
 
 class ProjectOut(ProjectBase):

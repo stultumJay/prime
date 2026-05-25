@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AddToAipPayload } from "@/services/projectActions.service";
 import type { ProjectDetailPayload } from "@/services/project.service";
-import { formatPHPFull } from "@/lib/format";
+import { formatPHPFull, hasMaxTwoDecimalPlaces, normalizeMoneyInput } from "@/lib/format";
 import { FieldLabel, ModalButton, ModalShell, inputCls, readonlyInputCls } from "./ModalShell";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, } from "@/components/ui/tooltip";
 
@@ -60,6 +60,7 @@ export default function AddToAipModal({
   };
   const targetNumber = toInteger(targetTotal);
   const targetIsValid = Number.isInteger(targetNumber) && targetNumber > 0;
+  const budgetValuesHaveValidPrecision = [ps, mooe, fe, co].every(hasMaxTwoDecimalPlaces);
   const canSubmit =
     !submitting &&
     yearNumber >= 2000 &&
@@ -67,6 +68,7 @@ export default function AddToAipModal({
     majorFinalOutput.trim() &&
     indicator.trim() &&
     targetIsValid &&
+    budgetValuesHaveValidPrecision &&
     totalBudget > 0;
 
   return (
@@ -291,7 +293,7 @@ function BudgetInput({
           min={0}
           step="0.01"
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => onChange(normalizeMoneyInput(event.target.value))}
         />
         <Tooltip>
           <TooltipTrigger asChild>

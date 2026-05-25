@@ -9,7 +9,7 @@ import {
   type CurrentAppropriationInfo,
   type FundSourceOption,
 } from "@/services/projectActions.service";
-import { formatPHPFull } from "@/lib/format";
+import { formatPHPFull, hasMaxTwoDecimalPlaces, normalizeMoneyInput } from "@/lib/format";
 import {
   ModalShell,
   FieldLabel,
@@ -119,6 +119,9 @@ export default function AppropriationModal({
       (row) => !row.fund_source_id || !row.expense_class || toAmount(row.amount) <= 0,
     );
     if (incomplete) return "Each fund source line needs a fund source, expense class, and amount greater than zero.";
+
+    const invalidPrecision = rows.find((row) => !hasMaxTwoDecimalPlaces(row.amount));
+    if (invalidPrecision) return "Budget amounts can only include up to 2 decimal places.";
 
     const lowered = rows.find((row) => row.appr_fund_source_id && toAmount(row.amount) < row.current_amount);
     if (lowered) {
@@ -401,7 +404,7 @@ export default function AppropriationModal({
                       min={row.current_amount}
                       step="0.01"
                       value={row.amount}
-                      onChange={(event) => updateRow(row.row_id, { amount: event.target.value })}
+                      onChange={(event) => updateRow(row.row_id, { amount: normalizeMoneyInput(event.target.value) })}
                     />
                   </td>
                   <td className="px-3 py-3 text-right">
